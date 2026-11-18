@@ -1,6 +1,6 @@
 ---
 name: academic-humanizer
-version: 0.3.3
+version: 0.3.3+dprn.1
 description: |
   Improve the clarity and voice of AI-assisted academic writing (papers, theses, rebuttals) and
   funding proposals (NSF Project Summary/Description, NIH Specific Aims): preserve scholarly
@@ -41,7 +41,9 @@ verb is stronger than its evidence.**
    empirical claim's evidence status.
 3. **Rewrite**: same structure and content, all claims and citations preserved, tells removed, over-claims
    matched to evidence, legitimate hedging kept.
-4. **Report**: cleaned text plus a short change log (patterns removed, claims softened or given evidence
+4. **Fidelity check** (mandatory, see Layer 7): compare the rewrite with the input span by span and revert
+   anything that the input or the author's own sources do not support.
+5. **Report**: cleaned text plus a short change log (patterns removed, claims softened or given evidence
    pointers, voice notes). Cover everything the original covered: if it had five paragraphs, so does the
    rewrite.
 
@@ -65,6 +67,10 @@ intricate dependencies, showcasing a seamless integration that underscores its p
 ---
 
 ## Layer 2: Academic AI tells (remove or fix)
+
+The Before/After pairs below illustrate wording only. Where an After names a dataset, a number, or a
+table that its Before lacks, read it as "taken from elsewhere in the same manuscript". In a real edit,
+every such fact must come from the input or from sources the author supplied (Layer 7).
 
 ### 2.1 Over-claiming verbs
 Empirical work *shows* and *provides evidence*; it does not *prove* or *demonstrate* universal truths.
@@ -152,12 +158,18 @@ A general humanizer flattens legitimate scholarly constructs. Keep them.
   them entirely (Layer 1), recasting with commas, colons, parentheses, or separate sentences.
 - **Formal definitions, named methods/metrics, technical terms, equations, and symbols** stay verbatim.
 - **Never invent, drop, or alter a number, equation, or citation.** Same content; preserve every cite key.
+  Layer 7 checks this mechanically at the end.
 
 ---
 
 ## Layer 4: Claim-evidence discipline
 For every empirical claim, check (a) is it backed by a number, figure, table, or citation in the text,
 and (b) does the verb match the strength of that evidence?
+
+Evidence may only come from the manuscript itself or from sources the author supplied. Never fill a gap
+from your own knowledge: no recalled figure, statistic, dataset, theorem, or reference goes into the
+rewritten text. When the evidence a claim needs is not supplied, either soften the verb to what the text
+supports or insert a placeholder such as `[EVIDENCE NEEDED: accuracy gap vs. strongest baseline]`.
 
 - **Unbacked claim -> add the evidence pointer or soften.**
   *Before:* *Our method is more robust.*  *After:* *Our method's accuracy drops by 2 points under
@@ -256,6 +268,37 @@ the gap for the author rather than papering over it.
 
 ---
 
+## Layer 7: Fidelity check (mandatory, last step before the report)
+Compare the rewrite with the input and any author-supplied sources. Every item below that appears in the
+rewrite must also appear in the input or in those sources:
+
+- numbers, units, statistics, ranges, dates, and percentages (a number the input spelled out in words is
+  fine);
+- named entities: datasets, methods, models, trials, instruments, theorems, people, institutions,
+  programs, and funding agencies;
+- citations and cross-references: every `\cite` key, `\ref`/`\eqref` label, and numbered figure, table,
+  section, equation, or theorem;
+- mathematical content: every displayed or inline formula, symbol, and stated hypothesis, unchanged;
+- assertions: every claim must be grounded in the input, even when it contains no number.
+
+Check the converse as well: no number, citation, label, or formula of the input may be missing from the
+rewrite, unless a deleted sentence carried it and the change report says so.
+
+If a span fails, revert it to the input's wording or replace it with an `[EVIDENCE NEEDED: ...]`
+placeholder. Do not rewrite around the problem. When you can run commands, extract the numbers,
+`\cite` keys, and labels from both texts and compare the two lists rather than checking by eye.
+
+In proposal mode the same rule covers preliminary results, prior funding, publications, partners, and
+letters (see 6.4 and 6.5).
+
 ## Output
-Return the cleaned text plus a short change report: patterns removed (by type), claims softened or given
-evidence pointers, and any voice/venue notes. Confirm that no number, equation, or citation was altered.
+Return:
+1. The cleaned text.
+2. A short change report: patterns removed (by type), claims softened or given evidence pointers, and any
+   voice/venue notes.
+3. The fidelity check result: confirm that every number, equation, citation, label, and named entity in
+   the rewrite appears in the input or in author-supplied sources, and name every span you reverted.
+4. A list of every `[EVIDENCE NEEDED: ...]` placeholder inserted, so the author can fill each one.
+5. If any: "Candidate evidence for the author (unverified, not inserted)", listing figures or references
+   you recalled that might fill a placeholder. The author must check each one against the primary source
+   before using it.
